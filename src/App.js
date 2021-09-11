@@ -6,26 +6,31 @@ import Tours from "./Tours"
 const url = "https://course-api.com/react-tours-project"
 function App() {
   const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
   const [tours, setTours] = useState([])
 
-  useEffect(() => {
-    console.log("I have started! Fetching data now...")
-    fetch(url)
-      .then((res) => {
-        const { status } = res
-        if (status >= 200 && status <= 299) {
-          setIsLoading(false)
-          return res.json()
-        }
-        throw new Error(status)
-      })
-      .then((tours) => {
-        setTours(tours)
-      })
-      .catch((err) => console.log(err))
-  }, [])
+  const removeTour = (id) => {
+    const remainingTours = tours.filter((tour) => tour.id !== id)
+    setTours(remainingTours)
+  }
 
-  console.log(tours)
+  const fetchTours = async () => {
+    setIsLoading(true)
+    console.log("I have started! Fetching data now...")
+    try {
+      const res = await fetch(url)
+      const tours = await res.json()
+      setIsLoading(false)
+      setTours(tours)
+    } catch {
+      setIsLoading(false)
+      setIsError(true)
+    }
+  }
+
+  useEffect(() => {
+    fetchTours()
+  }, [])
 
   if (isLoading) {
     return (
@@ -33,9 +38,33 @@ function App() {
         <Loading />
       </>
     )
-  } else {
-    return <Tours />
+  } else if (isError) {
+    return (
+      <>
+        <div className="container">
+          <h2>An Error has occured!</h2>
+          <button onClick={window.location.reload}>Reload the page</button>
+        </div>
+      </>
+    )
   }
+
+  if (tours.length === 0) {
+    return (
+      <main>
+        <div className="title">
+          <button className="btn" onClick={fetchTours}>
+            Reload the Page
+          </button>
+        </div>
+      </main>
+    )
+  }
+  return (
+    <main>
+      <Tours tours={tours} removeTour={removeTour} />
+    </main>
+  )
 }
 
 export default App
